@@ -1,10 +1,9 @@
 package util;
 
-import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.http.Consts;
-import org.apache.http.client.HttpClient;
+import org.apache.http.HttpMessage;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -12,10 +11,13 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.message.AbstractHttpMessage;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,11 +29,20 @@ import java.util.stream.Collectors;
  * @author bjca
  */
 @Slf4j
-@UtilityClass
-public class HttpUtils {
-    private final HttpClient httpClient = new HttpClientBuilderBuilder().build().build();
-    private final String UTF_8 = "UTF-8";
-    private final ContentType CONTENT_TYPE_JSON = ContentType.create("application/json", Consts.UTF_8);
+public class HttpInvoker {
+    private static final CloseableHttpClient POOL_CLIENT = new HttpClientBuilderBuilder().build().build();
+    private static final String UTF_8 = "UTF-8";
+    private static final ContentType CONTENT_TYPE_JSON = ContentType.create("application/json", Consts.UTF_8);
+
+    private boolean pooling;
+
+    public HttpInvoker() {
+        this(true);
+    }
+
+    public HttpInvoker(boolean pooling) {
+        this.pooling = pooling;
+    }
 
     /**
      * 执行GET请求。
@@ -104,20 +115,29 @@ public class HttpUtils {
     }
 
     private String execute(HttpUriRequest request, String exceptionMsg) {
+        val client = pooling ? POOL_CLIENT : HttpClients.custom()
+                .setConnectionManager(new BasicHttpClientConnectionManager()).build();
         try {
-            return httpClient.execute(request, new BasicResponseHandler());
+            return client.execute(request, new BasicResponseHandler());
         } catch (Exception e) {
             log.error(exceptionMsg, e);
             throw new RuntimeException(
                     request.getMethod() + " " + request.getURI() + " exception " + exceptionMsg, e);
         } finally {
+            if (!pooling) {
+                try {
+                    client.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
             // This will make sure that the client doesn't have to consume the entire body of the request
             // to release the connection:
             request.abort();
         }
     }
 
-    private void setHeaders(Map<String, String> headMap, AbstractHttpMessage httpMessage) {
+    private void setHeaders(Map<String, String> headMap, HttpMessage httpMessage) {
         if (headMap == null) {
             return;
         }

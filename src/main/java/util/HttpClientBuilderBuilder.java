@@ -51,7 +51,7 @@ public class HttpClientBuilderBuilder {
     /**
      * 连接池最大连接数.
      */
-    private static final int MAX_TOTAL = 300;
+    private static final int MAX_TOTAL = 30;
     /**
      * 每个路由默认最大连接数.
      */
