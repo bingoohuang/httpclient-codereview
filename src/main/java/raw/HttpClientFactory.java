@@ -1,4 +1,4 @@
-package cn.org.bjca.bmca.common.util.http.base;
+package raw;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;

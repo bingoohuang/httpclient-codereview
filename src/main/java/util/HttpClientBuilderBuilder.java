@@ -55,7 +55,7 @@ public class HttpClientBuilderBuilder {
     /**
      * 每个路由默认最大连接数.
      */
-    private static final int DEFAULT_MAX_PER_ROUTE = 10;
+    private static final int DEFAULT_MAX_PER_ROUTE = 30;
 
     /**
      * 创建HttpClientBuilder.
@@ -96,21 +96,16 @@ public class HttpClientBuilderBuilder {
     private Map<Class<? extends IOException>, Boolean> createRetryClasses() {
         Map<Class<? extends IOException>, Boolean> retryClasses = new LinkedHashMap<>();
 
-        // 如果服务器丢掉了连接，那么就重试
         retryClasses.put(NoHttpResponseException.class, true);
-        // 不要重试SSL握手异常
-        retryClasses.put(SSLHandshakeException.class, false);
-        // socket超时
-        retryClasses.put(SocketTimeoutException.class, false);
-        // 连接超时
-        retryClasses.put(ConnectTimeoutException.class, false);
-        // 超时
-        retryClasses.put(InterruptedIOException.class, true);
-        retryClasses.put(UnknownHostException.class, true);
-        // ssl握手异常
-        retryClasses.put(SSLException.class, false);
         retryClasses.put(ConnectException.class, true);
         retryClasses.put(SocketException.class, true);
+        retryClasses.put(SocketTimeoutException.class, true);
+        retryClasses.put(ConnectTimeoutException.class, true);
+        retryClasses.put(InterruptedIOException.class, true);
+
+        retryClasses.put(UnknownHostException.class, false);
+        retryClasses.put(SSLHandshakeException.class, false);
+        retryClasses.put(SSLException.class, false);
 
         return retryClasses;
     }

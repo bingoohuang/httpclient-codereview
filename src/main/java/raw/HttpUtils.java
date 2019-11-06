@@ -1,4 +1,4 @@
-package cn.org.bjca.bmca.common.util.http.base;
+package raw;
 
 import java.net.URI;
 import java.util.ArrayList;
